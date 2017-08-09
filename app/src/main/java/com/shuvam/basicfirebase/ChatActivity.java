@@ -6,6 +6,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
@@ -18,6 +19,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.firebase.client.ChildEventListener;
 import com.firebase.client.DataSnapshot;
@@ -43,7 +45,11 @@ public class ChatActivity extends AppCompatActivity {
     EditText messageArea;
     @BindView(R.id.scrollView)ScrollView scrollView;
     @BindView(R.id.layout1)LinearLayout layout;
+    @BindView(R.id.linearLayout)LinearLayout ll;
 
+    float dX;
+    float dY;
+    int lastAction;
     Firebase reference1, reference2;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -106,6 +112,35 @@ public class ChatActivity extends AppCompatActivity {
             @Override
             public void onCancelled(FirebaseError firebaseError) {
 
+            }
+        });
+
+
+        ll.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getActionMasked()) {
+                    case MotionEvent.ACTION_DOWN:
+                        dX = ll.getX() - event.getRawX();
+                        dY = ll.getY() - event.getRawY();
+                        lastAction = MotionEvent.ACTION_DOWN;
+                        break;
+
+                    case MotionEvent.ACTION_MOVE:
+                        ll.setY(event.getRawY() + dY);
+                       // ll.setX(event.getRawX() + dX);
+                        lastAction = MotionEvent.ACTION_MOVE;
+                        break;
+
+                    case MotionEvent.ACTION_UP:
+                        if (lastAction == MotionEvent.ACTION_DOWN)
+                            Toast.makeText(ChatActivity.this, "Clicked!", Toast.LENGTH_SHORT).show();
+                        break;
+
+                    default:
+                        return false;
+                }
+                return true;
             }
         });
 

@@ -20,6 +20,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.shuvam.basicfirebase.utils.ServerHelper;
 import com.shuvam.basicfirebase.utils.SharedPrefsUtils;
 
 import org.json.JSONException;
@@ -84,14 +85,9 @@ public class Login extends AppCompatActivity {
 
     private void checkUserExists(final String username, final String password) {
 
-
-        pd.setMessage("Logging in......");
-        pd.show();
-
-        String url = "https://basicfirebase-e1506.firebaseio.com/Users.json";
-        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+        new ServerHelper(this).serverGetRequest("https://basicfirebase-e1506.firebaseio.com/Users.json","Logging in...", new ServerHelper.ServerCallback() {
             @Override
-            public void onResponse(String response) {
+            public void onSuccess(String response) {
                 if(response.equals("null")){
                     Toast.makeText(Login.this, "user not found", Toast.LENGTH_LONG).show();
                 }
@@ -117,21 +113,14 @@ public class Login extends AppCompatActivity {
                         e.printStackTrace();
                         pd.cancel();
                     }
-
-
                 }
-                pd.cancel();
             }
-        }, new Response.ErrorListener() {
+
             @Override
-            public void onErrorResponse(VolleyError error) {
-                System.out.println("" + error);
-                pd.dismiss();
+            public void onError(String error) {
+
             }
         });
-
-        RequestQueue rQueue = Volley.newRequestQueue(Login.this);
-        rQueue.add(request);
 
     }
 

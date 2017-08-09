@@ -31,10 +31,12 @@ import org.json.JSONObject;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import io.realm.Realm;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -50,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
 
     SharedPrefsUtils spu;
     ProgressDialog pd;
+    HashMap<String, Integer> hm;
+    private Realm realm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void init() {
+        realm = Realm.getDefaultInstance();
         pd = new ProgressDialog(this);
         lm = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(lm);
@@ -104,6 +109,78 @@ public class MainActivity extends AppCompatActivity {
         populateRecView();
         pd.setMessage("Loading");
         pd.show();
+        hm = new HashMap<>();
+        seeMyMessages();
+
+    }
+
+    private void seeMyMessages() {
+
+        String url = "https://basicfirebase-e1506.firebaseio.com/messages.json";
+        StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                if(response.equals("null")){
+                    Toast.makeText(MainActivity.this, "user not found", Toast.LENGTH_LONG).show();
+                }
+                else
+                {
+                    int count = 0;
+                    int c =0;
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        Log.d("User Messages",obj.toString());
+                        Iterator i = obj.keys();
+
+                        while (i.hasNext()) {
+                            c=0;
+                            String[] msgdet = i.next().toString().split("_");
+                            if(msgdet[0].equals(spu.getStringPreference(MainActivity.this,"Username")))
+                            {
+                                JSONObject innerJObject = obj.getJSONObject(msgdet[0]+"_"+msgdet[1]);
+                                Iterator x = innerJObject.keys();
+                                while (x.hasNext()) {
+                                    count++;
+                                    String innerKkey = x.next().toString();
+                                    JSONObject inner2JObject = innerJObject.getJSONObject(innerKkey);
+                                    Log.d("message_got", inner2JObject.getString("message"));
+                                    if(!inner2JObject.get("user").equals(spu.getStringPreference(MainActivity.this,"Username")))
+                                    {
+                                        hm.put(inner2JObject.get("user").toString(),++c);
+                                    }
+
+                                }
+                            }
+                           // User u = new User(i.next().toString());
+                            //if(!u.getUsername().equals(spu.getStringPreference(MainActivity.this,"Username")))
+                               // users.add(u);
+                        }
+                        Log.d("Number of messages",""+count);
+                        for (String name: hm.keySet()){
+                            String value = hm.get(name).toString();
+                            System.out.println(name + " " + value);
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                System.out.println("" + error);
+            }
+        });
+
+        RequestQueue rQueue = Volley.newRequestQueue(MainActivity.this);
+        rQueue.add(request);
+        setRealmObject();
+    }
+
+    private void setRealmObject() {
+
 
     }
 
@@ -114,8 +191,6 @@ public class MainActivity extends AppCompatActivity {
         StringRequest request = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
-
-                Log.d("Response got","Got got");
                 if(response.equals("null")){
                     Toast.makeText(MainActivity.this, "user not found", Toast.LENGTH_LONG).show();
                 }
@@ -132,7 +207,6 @@ public class MainActivity extends AppCompatActivity {
                             if(!u.getUsername().equals(spu.getStringPreference(MainActivity.this,"Username")))
                             users.add(u);
                         }
-
                         pd.cancel();
                         adapter = new MyAdapter(users);
                         recyclerView.setAdapter(adapter);
